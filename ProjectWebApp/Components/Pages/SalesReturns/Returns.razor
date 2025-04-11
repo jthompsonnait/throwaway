@@ -1,5 +1,103 @@
-﻿<h3>Returns</h3>
+﻿@page "/Returns"
+@using SalesReturnsSystem.ViewModels
+@using MudBlazor
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
-@code {
+<PageTitle>Returns</PageTitle>
 
-}
+<AuthorizeView Roles="Sales Manager">
+    <NotAuthorized>
+        <MudAlert Severity="Severity.Warning" Class="mt-4">
+            <MudText Typo="Typo.body1">You do not have access to this page. Please contact an administrator.</MudText>
+        </MudAlert>
+    </NotAuthorized>
+
+    <Authorized>
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h4">Returns</MudText>
+
+            <MudGrid Class="mb-2">
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Enter Sale ID" @bind-Value="sale.SaleID" Variant="Variant.Outlined" Immediate="true" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="() => ConfirmAndLoadSale(sale.SaleID)">Load Sale</MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Default" Class="ml-2" OnClick="ClearScreen">Cancel</MudButton>
+                </MudItem>
+            </MudGrid>
+
+            @if (sale.SaleID > 0)
+            {
+                <MudPaper Class="pa-4 mt-4">
+                    <MudText Typo="Typo.h6">Sale Information</MudText>
+                    <MudText>Sale ID: @sale.SaleID</MudText>
+                    <MudText>Customer: @SelectedCustomer?.FirstName @SelectedCustomer?.LastName</MudText>
+                    <MudText>Sale Date: @sale.SaleDate.ToShortDateString()</MudText>
+                    <MudText>Discount %: @discountPercentage</MudText>
+                    <MudText>Payment Method: @GetPaymentMethodName(sale.PaymentType)</MudText>
+                </MudPaper>
+            }
+
+            @if (RefundDetails.Any())
+            {
+                <MudTable Items="RefundDetails" Hover="true" Class="mt-4">
+                    <HeaderContent>
+                        <MudTh>Part</MudTh>
+                        <MudTh>Price</MudTh>
+                        <MudTh>Org Qty</MudTh>
+                        <MudTh>Returned</MudTh>
+                        <MudTh>Refundable</MudTh>
+                        <MudTh>Qty</MudTh>
+                        <MudTh>Reason</MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="refund">
+                        <MudTd>@refund.SaleDetail.Part.Description</MudTd>
+                        <MudTd>@refund.SaleDetail.SellingPrice.ToString("C")</MudTd>
+                        <MudTd>@refund.SaleDetail.Quantity</MudTd>
+                        <MudTd>@refund.ReturnedQuantity</MudTd>
+                        <MudTd>@(refund.Refundable ? "Y" : "N")</MudTd>
+                        <MudTd>
+                            <MudNumericField T="int"
+                                             Value="@refund.QuantityToReturn"
+                                             ValueChanged="(int val) => OnQuantityChanged(refund, val)"
+                                             ValueExpression="() => refund.QuantityToReturn"
+                                             Min="0"
+                                             Max="@(refund.SaleDetail.Quantity - refund.ReturnedQuantity)"
+                                             Immediate="true"
+                                             Disabled="@(!refund.Refundable || refund.SaleDetail.Quantity - refund.ReturnedQuantity == 0)"
+                                             Style="width: 80px;" />
+                        </MudTd>
+                        <MudTd>
+                            <MudTextField T="string"
+                                          Value="@refund.Reason"
+                                          ValueChanged="(string val) => OnReasonChanged(refund, val)"
+                                          ValueExpression="() => refund.Reason"
+                                          Required="true"
+                                          RequiredError="Reason is required"
+                                          Placeholder="Reason"
+                                          Variant="Variant.Outlined"
+                                          Disabled="@(!refund.Refundable || refund.SaleDetail.Quantity - refund.ReturnedQuantity == 0)"
+                                          Style="width: 150px;" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+
+                <MudDivider Class="my-4" />
+
+                <MudText Typo="Typo.body1">Subtotal: @Subtotal.ToString("C")</MudText>
+                <MudText Typo="Typo.body1">Discount: @Discount.ToString("C")</MudText>
+                <MudText Typo="Typo.body1">Tax: @Tax.ToString("C")</MudText>
+                <MudText Typo="Typo.body1">Total: @Total.ToString("C")</MudText>
+
+                <MudButton Variant="Variant.Filled" Color="Color.Success" Disabled="@(!CanProcessReturn)" OnClick="() => ProcessRefund(sale.SaleID)">Process Return</MudButton>
+
+                @if (!string.IsNullOrWhiteSpace(errorMessage))
+                {
+                    DialogService.ShowMessageBox("Error", errorMessage, "OK");
+                    errorMessage = string.Empty;
+                }
+            }
+        </MudPaper>
+    </Authorized>
+</AuthorizeView>
