@@ -1,0 +1,319 @@
+﻿@page "/Purchasing"
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>E-Bikes Purchasing</PageTitle>
+
+<MudText Typo="Typo.h3">Purchasing</MudText>
+
+@if (hasError)
+{
+    <MudAlert Elevation="2"
+              Severity="Severity.Error"
+              Dense="true">
+        <MudText Typo="Typo.h6">@errorMessage</MudText>
+        @foreach (var error in errorDetails)
+        {
+            <MudText Typo="Typo.body2">@error</MudText>
+        }
+    </MudAlert>
+}
+
+@if (hasFeedback)
+{
+    <MudAlert Elevation="2"
+              Severity="Severity.Info"
+              Dense="true">
+        <MudText Typo="Typo.body2">@feedbackMessage</MudText>
+    </MudAlert>
+}
+
+<MudForm @ref="purchasingForm" @bind-IsValid="isFormValid" @bind-IsTouched="hasDataChanged">
+    <AuthorizeView Roles="Store Staff, Sales Manager">
+        <NotAuthorized>
+            <MudAlert Severity="Severity.Warning" Class="mt-4">
+                <MudText Typo="Typo.body1">You do not have access to this page. Please contact an administrator.</MudText>
+            </MudAlert>
+        </NotAuthorized>
+
+        <Authorized>
+            <MudGrid xs="6" Class="pa-4">
+                <MudItem xs="12" md="6">
+                    <MudGrid>
+                        <MudItem xs="10">
+                            <MudSelect @bind-Value="vendorSelect.VendorID"
+                                       Variant="Variant.Outlined"
+                                       Label="Vendor"
+                                       Required
+                                       RequiredError="You must select a Vendor">
+                                <MudSelectItem T="int" Value="0">Please select a vendor...</MudSelectItem>
+                                @foreach (var item in vendors)
+                                {
+                                    <MudSelectItem T="int" Value="@item.VendorID">@item.VendorName, @item.Address, @item.City, @item.PostalCode, @item.Phone</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="2">
+                            <MudButton Color="Color.Dark"
+                                       Variant="Variant.Filled"
+                                       OnClick="FindOrder"
+                                       Class="mt-4"
+                                       Size="Size.Large">
+                                <MudIcon Icon="@Icons.Material.Filled.Search" />
+                            </MudButton>
+                        </MudItem>
+                    </MudGrid>
+                </MudItem>
+
+                @if (vendorView.VendorID != 0)
+                {
+                    <MudItem xs="12" md="6" Class="mt-4">
+                        <div class="d-flex justify-end">
+
+                            @* Save or Update the Order *@
+                            <MudButton Color="Color.Primary"
+                                       Variant="Variant.Filled"
+                                       OnClick="UpdateSaveOrder"
+                                       Size="Size.Large"
+                                       StartIcon="@Icons.Material.Filled.Save"
+                                       Disabled="@(!isFormValid || !hasDataChanged)">
+                                @(purchaseOrderView.PurchaseOrderNumber == 0 ? "Save" : "Update")
+                            </MudButton>
+
+                            @* Place the Order *@
+                            @if (AuthenticationStateProvider.GetAuthenticationStateAsync().Result.User.Identity.IsAuthenticated
+                           && AuthenticationStateProvider.GetAuthenticationStateAsync().Result.User.IsInRole("Sales Manager"))
+                            {
+                                <MudButton Color="Color.Success"
+                                           Variant="Variant.Filled"
+                                           OnClick="PlaceOrder"
+                                           Size="Size.Large"
+                                           Class="ml-2"
+                                           StartIcon="@Icons.Material.Filled.Place"
+                                           Disabled="@(!isFormValid)">
+                                    Place
+                                </MudButton>
+                            }
+
+                            @* Cancel or Delete the Order *@
+                            @if (AuthenticationStateProvider.GetAuthenticationStateAsync().Result.User.Identity.IsAuthenticated
+                           && (AuthenticationStateProvider.GetAuthenticationStateAsync().Result.User.IsInRole("Sales Manager")
+                           || purchaseOrderView.PurchaseOrderNumber == 0))
+                            {
+                                <MudButton Color="Color.Error"
+                                           Variant="Variant.Filled"
+                                           OnClick="DeleteOrder"
+                                           Size="Size.Large"
+                                           Class="ml-2"
+                                           StartIcon="@(purchaseOrderView.PurchaseOrderNumber == 0 ? Icons.Material.Filled.Close : Icons.Material.Filled.Delete)">
+                                    @(purchaseOrderView.PurchaseOrderNumber == 0 ? "Cancel" : "Delete")
+                                </MudButton>
+                            }
+
+                            @* Clear Changes *@
+                            <MudButton Color="Color.Dark"
+                                       Variant="Variant.Filled"
+                                       OnClick="ClearOrder"
+                                       Size="Size.Large"
+                                       Class="ml-2"
+                                       StartIcon="@Icons.Material.Filled.CleaningServices">
+                                Clear
+                            </MudButton>
+                        </div>
+                    </MudItem>
+                }
+
+            </MudGrid>
+
+        </Authorized>
+    </AuthorizeView>
+
+    @if (vendorView.VendorID != 0)
+    {
+        <MudGrid xs="6">
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4 border-solid border-2 mud-border-primary">
+                    <MudGrid Spacing="1">
+                        <MudItem xs="3">
+                            <MudText Typo="Typo.body1" Align="Align.End">
+                                <b>Vendor Name:</b>
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="9">
+                            <MudText Typo="Typo.body1">
+                                @vendorView.VendorName
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                    <MudGrid Spacing="1">
+                        <MudItem xs="3">
+                            <MudText Typo="Typo.body1" Align="Align.End">
+                                <b>Phone:</b>
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="9">
+                            <MudText Typo="Typo.body1">
+                                @vendorView.Phone
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                    <MudGrid Spacing="1">
+                        <MudItem xs="3">
+                            <MudText Typo="Typo.body1" Align="Align.End">
+                                <b>Address:</b>
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="9">
+                            <MudText Typo="Typo.body1">
+                                @vendorView.Address
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                    <MudGrid Spacing="1">
+                        <MudItem xs="3">
+                            <MudText Typo="Typo.body1" Align="Align.End">
+                                <b>PO #:</b>
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="9">
+                            <MudText Typo="Typo.body1">
+                                @(purchaseOrderView.PurchaseOrderNumber == 0 ? "####/New Order" : purchaseOrderView.PurchaseOrderNumber)
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4 border-solid border-2 mud-border-primary">
+                    <MudGrid Spacing="1">
+                        <MudItem xs="3">
+                            <MudText Typo="Typo.body1" Align="Align.End">
+                                <b>Subtotal:</b>
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="9">
+                            <MudText Typo="Typo.body1">
+                                @purchaseOrderView.Subtotal.ToString("C")
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                    <MudGrid Spacing="1">
+                        <MudItem xs="3">
+                            <MudText Typo="Typo.body1" Align="Align.End">
+                                <b>GST:</b>
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="9">
+                            <MudText Typo="Typo.body1">
+                                @purchaseOrderView.GST.ToString("C")
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                    <MudGrid Spacing="1">
+                        <MudItem xs="3">
+                            <MudText Typo="Typo.body1" Align="Align.End">
+                                <b>Total:</b>
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="9">
+                            <MudText Typo="Typo.body1">
+                                @purchaseOrderView.Total.ToString("C")
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudText Typo="Typo.h4">Parts In Order</MudText>
+                <MudDataGrid Items="purchaseOrderView.Parts"
+                             Elevation="0"
+                             FixedFooter="true"
+                             FixedHeader="true"
+                             Height="16.59rem"
+                             EditMode="DataGridEditMode.Cell"
+                             EditTrigger="DataGridEditTrigger.OnRowClick"
+                             ReadOnly="false">
+                    <Columns>
+                        <TemplateColumn Editable="false">
+                            <CellTemplate>
+                                <MudButton Color="Color.Error"
+                                           OnClick="() => RemovePartFromOrder(context.Item.PartID)">
+                                    <MudIcon Icon="@Icons.Material.Filled.RemoveShoppingCart" />
+                                </MudButton>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <PropertyColumn Property="x => x.PartID" Title="ID" Editable="false" />
+                        <PropertyColumn Property="x => x.Description" Title="Description" Editable="false" />
+                        <PropertyColumn Property="x => x.QOH" Title="QOH" Editable="false" />
+                        <PropertyColumn Property="x => x.ROL" Title="ROL" Editable="false" />
+                        <PropertyColumn Property="x => x.QTO" Title="QTO" Editable="true">
+                            <EditTemplate>
+                                <MudNumericField Value="context.Item.QTO"
+                                                 ValueChanged="(int newQuantity) => QTOChanged(context.Item, newQuantity)"
+                                                 Immediate="true"
+                                                 Margin="Margin.Dense"
+                                                 For="@(() => context.Item.QTO)"
+                                                 Min="1"
+                                                 Step="1" />
+                            </EditTemplate>
+                        </PropertyColumn>
+                        <PropertyColumn Property="x => x.PurchasePrice" Title="Price" Format="C2" Editable="true">
+                            <EditTemplate>
+                                <MudNumericField Value="context.Item.PurchasePrice"
+                                                 ValueChanged="(decimal newPrice) => PriceChanged(context.Item, newPrice)"
+                                                 Format="C2"
+                                                 Immediate="true"
+                                                 Margin="Margin.Dense"
+                                                 For="@(() => context.Item.PurchasePrice)"
+                                                 Min="0.00m"
+                                                 Step="0.01m" />
+                            </EditTemplate>
+                        </PropertyColumn>
+                    </Columns>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.h6">No items are currently in the order.</MudText>
+                    </NoRecordsContent>
+
+                    <PagerContent>
+                        <MudDataGridPager />
+                    </PagerContent>
+                </MudDataGrid>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudText Typo="Typo.h4">Available Parts</MudText>
+                <MudDataGrid Items="parts"
+                             Elevation="0"
+                             FixedFooter="true"
+                             FixedHeader="true"
+                             Height="16.59rem">
+                    <Columns>
+                        <TemplateColumn>
+                            <CellTemplate>
+                                <MudButton Color="Color.Success"
+                                           OnClick="() => AddPartToOrder(context.Item.PartID)">
+                                    <MudIcon Icon="@Icons.Material.Filled.Add" />
+                                </MudButton>
+                            </CellTemplate>
+                        </TemplateColumn>
+                        <PropertyColumn Property="x => x.PartID" Title="ID" />
+                        <PropertyColumn Property="x => x.Description" Title="Description" />
+                        <PropertyColumn Property="x => x.QOH" Title="QOH" />
+                        <PropertyColumn Property="x => x.ROL" Title="ROL" />
+                        <PropertyColumn Property="x => x.QOO" Title="QOO" />
+                        <PropertyColumn Property="x => x.Buffer" Title="Buffer" />
+                        <PropertyColumn Property="@(x => x.Price.ToString("C2"))" Title="Price" />
+                    </Columns>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.h6">All items supplied by the vendoer are already in the order.</MudText>
+                    </NoRecordsContent>
+                    <PagerContent>
+                        <MudDataGridPager />
+                    </PagerContent>
+                </MudDataGrid>
+            </MudItem>
+        </MudGrid>
+    }
+</MudForm>

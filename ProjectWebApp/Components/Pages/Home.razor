@@ -1,0 +1,72 @@
+﻿
+@page "/"
+@using MudBlazor
+<PageTitle>Home</PageTitle>
+
+<MudContainer>
+    <MudText Typo="Typo.h3" GutterBottom="true">Project E-Bike</MudText>
+    <MudText Typo="Typo.h4">404 - Team Not Found</MudText>
+    <MudText Typo="Typo.h6" Class="d-flex align-items-center">
+        <img src="/404-logo.png" alt="Logo" style="text-align: center;" />
+    </MudText>
+    <MudTable Items="team" T="TeamMember">
+        <HeaderContent>
+            <MudTh>Name</MudTh>
+            <MudTh>Role</MudTh>
+        </HeaderContent>
+        <RowTemplate Context="member">
+            <MudTd>@member.Name</MudTd>
+            <MudTd>@member.Role</MudTd>
+        </RowTemplate>
+    </MudTable>
+
+    <MudTable Items="user" T="User" Class="mt-5">
+        <HeaderContent>
+            <MudTh>UserName/Email</MudTh>
+            <MudTh>Password</MudTh>
+            <MudTh>Role</MudTh>
+            <MudTh>Full Name</MudTh>
+        </HeaderContent>
+        <RowTemplate Context="user">
+            <MudTd>@user.userName</MudTd>
+            <MudTd>@user.password</MudTd>
+            <MudTd>@user.role</MudTd>
+            <MudTd>@user.fullname</MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudContainer>
+
+
+
+@code {
+    private List<TeamMember> team = new()
+    {
+        new TeamMember { Name = "Itua", Role = "Servicing" },
+        new TeamMember { Name = "James", Role = "Sales & Return " },
+        new TeamMember { Name = "Justin", Role = "Purchasing" },
+        new TeamMember { Name = "Haoyu", Role = "Recieving" }
+    };
+
+    public class TeamMember
+    {
+        public string Name { get; set; }
+        public string Role { get; set; }
+    }
+
+    private List<User> user = new()
+    {
+        new User { userName = "salesmanager@ebikes.com", password = "Sales@123", role = "Sales Manager", fullname = "Shirly Awesome" },
+        new User { userName = "staff2@ebikes.com", password = "Staff@123", role = "Store Staff", fullname = "Fred Flash" }
+
+    };
+
+    public class User
+    {
+        public string userName { get; set; }
+        public string password { get; set; }
+        public string role { get; set; }
+        public string fullname { get; set; }
+    }
+
+}
+

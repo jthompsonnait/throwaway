@@ -1,0 +1,291 @@
+﻿@page "/Servicing"
+<PageTitle>E-Bikes Servicing</PageTitle>
+<MudText Typo="Typo.h3">Services</MudText>
+
+@if (hasError)
+{
+    <MudAlert Severity="Severity.Error"
+    Dense="true"
+    Class="my-4">
+        <MudText Typo="Typo.body1">@errorMessage</MudText>
+        @foreach (var error in errorDetails)
+        {
+            <MudText Typo="Typo.body1">@error</MudText>
+        }
+    </MudAlert>
+}
+@if (hasFeedback)
+{
+    <MudAlert Severity="Severity.Info"
+    Dense="true"
+    Class="my-4">
+        <MudText Typo="Typo.body1">@feedbackMessage</MudText>
+    </MudAlert>
+}
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudStack Row="true" Spacing="2" StretchItems="StretchItems.Start" AlignItems="AlignItems.Center">
+            <MudTextField Margin="Margin.Dense" @bind-Value="searchValue" Label="Last Name/Partial" Variant="Variant.Outlined"></MudTextField>
+            <MudButton Size="Size.Medium" Variant="Variant.Filled" Color="Color.Primary" OnClick="CustomerSearch">Search</MudButton>
+            <MudButton Size="Size.Medium" Variant="Variant.Filled" Color="Color.Info" OnClick="ClearCustomerSearch">Clear</MudButton>
+        </MudStack>
+    </MudItem>
+    <MudItem xs="12">
+        <MudDataGrid Items="CustomerList"
+        Striped="true"
+        FixedFooter="true"
+        FixedHeader="true"
+        Height="16.59rem"
+        EditMode="DataGridEditMode.Cell"
+        EditTrigger="DataGridEditTrigger.OnRowClick"
+        ReadOnly="false">
+            <Columns>
+                <TemplateColumn Editable="false">
+                    <CellTemplate>
+                        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="() => CustomerSelect(context.Item.Id)">
+                            Select
+                        </MudButton>
+                    </CellTemplate>
+                </TemplateColumn>
+                <PropertyColumn Property="x => x.Name" Title="Name" Editable="false" />
+                <PropertyColumn Property="x => x.ContactPhone" Title="Phone" Editable="false" />
+                <PropertyColumn Property="x => x.Address" Title="Address" Editable="false" />
+
+            </Columns>
+            <NoRecordsContent>
+                <MudStack Class="mt-20" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.body2">No customers found or the search query is currently empty.</MudText>
+                </MudStack>
+            </NoRecordsContent>
+
+
+        </MudDataGrid>
+    </MudItem>
+    @if (customerId != 0)
+    {
+
+        <MudItem xs="12">
+            <MudStack Row="true" StretchItems="StretchItems.Middle" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.body1"><b>Customer Vehicle:</b></MudText>
+                <MudSelect @bind-Value="selectedVehicleVIN" Variant="Variant.Outlined" Margin="Margin.Dense">
+                    <MudSelectItem T="string" Value="string.Empty">Please select the customer's vehicle.</MudSelectItem>
+                    @foreach (var item in CustomerVehicleList)
+                    {
+                        <MudSelectItem T="string" Value="@item.VIN">@item.CarName</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudText Typo="Typo.body1"><b>@selectedVehicleVIN</b></MudText>
+            </MudStack>
+        </MudItem>
+        <MudItem xs="12">
+            <MudStack Row="true" Class="d-flex">
+                <MudStack Class="flex-1">
+                    <MudPaper Class="px-4 py-2" Height="39vh" Outlined="true">
+                        <MudText Typo="Typo.h5">Add Service</MudText>
+                        <MudStack Row="true" Justify="Justify.FlexStart" AlignItems="AlignItems.Start">
+
+                            <MudStack Spacing="0" Class="pt-3 gap-7" Style="width:180px">
+                                <MudText Class="d-flex justify-end" Typo="Typo.body1" Style="font-weight:bold">Select Service:</MudText>
+                                <MudText Class="d-flex justify-end" Typo="Typo.body1" Style="font-weight:bold">Service:</MudText>
+                                <MudText Class="d-flex justify-end" Typo="Typo.body1" Style="font-weight:bold">Hours:</MudText>
+                                <MudText Class="d-flex justify-end" Typo="Typo.body1" Style="font-weight:bold">Shop Rate:</MudText>
+                                <MudText Class="d-flex justify-end" Typo="Typo.body1" Style="font-weight:bold">Comments:</MudText>
+                            </MudStack>
+
+                            <MudStack Spacing="0" Style="width:100%">
+                                <MudSelect @bind-Value="SelectedStandardJob" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                    @foreach (var item in DefaultServiceList)
+                                    {
+                                        <MudSelectItem Value="@item">@item.Description</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudTextField Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="ServiceItem.Description" Disabled="true"></MudTextField>
+                                <MudTextField Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="ServiceItem.JobHours" Label="Input Hours..."></MudTextField>
+                                <MudText Class="pt-4 pb-3" Typo="Typo.body1" Style="font-weight:bold">$65.50</MudText>
+                                <MudTextField Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="ServiceItem.JobComments" Label="Add Comments..." Style="height: 120px"></MudTextField>
+                            </MudStack>
+
+                        </MudStack>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" Class="mt-1">
+                            <MudButton Variant="Variant.Filled" Color="Color.Info" OnClick="ServiceItemReset">Reset</MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="ServiceItemAdd">Add Service</MudButton>
+                        </MudStack>
+
+                    </MudPaper>
+                    <MudPaper Class="px-4 py-2" Height="34vh" Outlined="true">
+                        <MudDataGrid Items="ServiceOrderList"
+                        Striped="true"
+                        FixedFooter="true"
+                        FixedHeader="true"
+                        Height="20rem"
+                        Style="width: 100%"
+                        EditMode="DataGridEditMode.Cell"
+                        EditTrigger="DataGridEditTrigger.OnRowClick"
+                        ReadOnly="false">
+                            <Columns>
+
+                                <PropertyColumn Property="x => x.Description" Title="Part" Editable="false" />
+                                <PropertyColumn HeaderStyle="max-width:75px" Property="x => x.JobHours" Title="Hours" Editable="false" />
+                                <TemplateColumn HeaderStyle="max-width:75px" Title="Price" Editable="false">
+                                    <CellTemplate>
+                                        $65.50
+                                    </CellTemplate>
+                                </TemplateColumn>
+                                <TemplateColumn HeaderStyle="max-width:75px" Title="Ext.Price" Editable="false">
+                                    <CellTemplate>
+                                        @($"{(context.Item.JobHours * 65.50m):F2}")
+                                    </CellTemplate>
+                                </TemplateColumn>
+
+                                <TemplateColumn Editable="false" HeaderStyle="max-width:75px">
+                                    <CellTemplate>
+                                        <MudIconButton Color="Color.Error" Icon="@Icons.Material.Outlined.Delete" OnClick="() => ServiceItemRemove(context.Item)" />
+                                    </CellTemplate>
+                                </TemplateColumn>
+                            </Columns>
+                        </MudDataGrid>
+                        <MudStack Row="true" Justify="Justify.FlexEnd" AlignItems="AlignItems.Center" Spacing="4" Class="mt-2">
+                            <MudText Typo="Typo.body1"><b>Service Subtotal:</b></MudText>
+                            <MudText Typo="Typo.body1"><b>@($"${serviceSubtotal:F2}")</b></MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudStack>
+                <MudStack Class="flex-1">
+                    <MudPaper Class="px-4 py-2" Height="39vh" Outlined="true">
+                        <MudText Typo="Typo.h5">Add Part</MudText>
+                        <MudItem xs="12">
+                            <MudStack Row="true" StretchItems="StretchItems.End" AlignItems="AlignItems.Center">
+                                <MudText Class="d-flex justify-end" Typo="Typo.body1" Style="font-weight:bold">Select Category:</MudText>
+                                <MudSelect @bind-Value="catergoryId" Variant="Variant.Outlined" Margin="Margin.Dense" OnAdornmentClick="PartsByCatergory">
+                                    @foreach (var item in CategoryList)
+                                    {
+                                        <MudSelectItem Value="@item.CatergoryID">@item.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudStack>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudDataGrid Items="PartList"
+                            Striped="true"
+                            Bordered="true"
+                            FixedFooter="true"
+                            FixedHeader="true"
+                            Height="20rem"
+                            Style="width: 100%"
+                            EditMode="DataGridEditMode.Cell"
+                            EditTrigger="DataGridEditTrigger.OnRowClick"
+                            ReadOnly="false">
+                                <Columns>
+
+                                    <PropertyColumn Property="x => x.Description" Title="Part" Editable="false" />
+                                    <PropertyColumn HeaderStyle="max-width:75px" Property="x => x.Price" Title="Price" Editable="false" />
+                                    <PropertyColumn HeaderStyle="max-width:75px" Property="x => x.QOH" Title="QOH" Editable="false" />
+                                    <TemplateColumn Title="Quanity" Editable="false" HeaderStyle="max-width:75px">
+                                        <CellTemplate>
+                                            <MudSelect @bind-Value="context.Item.Quantity" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                                @for (int count = 0; count < context.Item.QOH; count++)
+                                                {
+                                                    <MudSelectItem T="int" @key="count" Value="@count">@count</MudSelectItem>
+
+                                                }
+                                            </MudSelect>
+                                        </CellTemplate>
+                                    </TemplateColumn>
+                                    <TemplateColumn Editable="false" HeaderStyle="max-width:75px">
+                                        <CellTemplate>
+                                            <MudButton Color="Color.Success" Variant="Variant.Text" OnClick="() => PartItemAdd(context.Item)">
+                                                <MudIcon Icon="@Icons.Material.Outlined.Add" />
+                                                Add
+                                            </MudButton>
+                                        </CellTemplate>
+                                    </TemplateColumn>
+                                </Columns>
+                                <NoRecordsContent>
+                                    <MudStack Class="mt-20" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                                        <MudText Typo="Typo.body2">No parts found or a catergory has not selected.</MudText>
+                                    </MudStack>
+                                </NoRecordsContent>
+                            </MudDataGrid>
+                        </MudItem>
+                    </MudPaper>
+                    <MudPaper Class="px-4 py-2" Height="34vh" Outlined="true">
+                        <MudDataGrid Items="PartOrderList"
+                                     Striped="true"
+                                     FixedFooter="true"
+                                     FixedHeader="true"
+                                     Height="20rem"
+                                     Style="width: 100%"
+                                     EditMode="DataGridEditMode.Cell"
+                                     EditTrigger="DataGridEditTrigger.OnRowClick"
+                                     ReadOnly="false">
+                            <Columns>
+
+                                <PropertyColumn Property="x => x.Description" Title="Part" Editable="false" />
+                                <PropertyColumn HeaderStyle="max-width:75px" Property="x => x.SellingPrice" Title="Price" Editable="false" />
+                                <PropertyColumn HeaderStyle="max-width:75px" Property="x => x.Quantity" Title="Qty" Editable="false" />
+                                <TemplateColumn HeaderStyle="max-width:75px" Title="Ext.Price" Editable="false">
+                                    <CellTemplate>
+                                        @($"{(context.Item.Quantity * context.Item.SellingPrice):F2}")
+                                    </CellTemplate>
+                                </TemplateColumn>
+                                <TemplateColumn Editable="false" HeaderStyle="max-width:75px">
+                                    <CellTemplate>
+                                        <MudIconButton Color="Color.Error" Icon="@Icons.Material.Outlined.Delete" OnClick="() => PartItemRemove(context.Item)" />
+                                    </CellTemplate>
+                                </TemplateColumn>
+                            </Columns>
+                        </MudDataGrid>
+                        <MudStack Row="true" Justify="Justify.FlexEnd" AlignItems="AlignItems.Center" Spacing="4" Class="mt-2">
+                            <MudText Typo="Typo.body1"><b>Parts Subtotal:</b></MudText>
+                            <MudText Typo="Typo.body1"><b>@($"${partsSubtotal:F2}")</b></MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudStack>
+
+                <MudPaper Class="px-4 py-2" Height="32vh" Outlined="true">
+                    <MudText Typo="Typo.h5" Class="mb-2">Totals</MudText>
+                    <MudGrid>
+
+                        <MudItem xs="5">
+                            <MudStack Spacing="0" Class="gap-4">
+                                <MudText Class="d-flex justify-end" Typo="Typo.body1" Style="font-weight:bold">Subtotal:</MudText>
+                                <MudText Class="d-flex justify-end" Typo="Typo.body1" Style="font-weight:bold">Discount:</MudText>
+                                <MudText Class="d-flex justify-end" Typo="Typo.body1" Style="font-weight:bold">GST:</MudText>
+                                <MudText Class="d-flex justify-end" Typo="Typo.body1" Style="font-weight:bold">Total:</MudText>
+                            </MudStack>
+
+                        </MudItem>
+                        <MudItem xs="7">
+                            <MudStack Spacing="0">
+                                <MudText Class="pb-2" Typo="Typo.body1" Style="font-weight:bold">@($"${subTotal:F2}")</MudText>
+                                <MudText Class="py-2" Typo="Typo.body1" Style="font-weight:bold">@($"${discount:F2}")</MudText>
+                                <MudText Class="py-2" Typo="Typo.body1" Style="font-weight:bold">@($"${gst:F2}")</MudText>
+                                <MudText Class="py-2" Typo="Typo.body1" Style="font-weight:bold">@($"${total:F2}")</MudText>
+                            </MudStack>
+                        </MudItem>
+                    </MudGrid>
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudTextField Variant="Variant.Outlined" Margin="Margin.Dense" @bind-Value="couponValue" Label="Input Coupon..."></MudTextField>
+                            <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Medium" OnClick="CouponVerification">Verify</MudButton>
+                        </MudStack>
+                        <MudStack Row="true" StretchItems="StretchItems.All" Justify="Justify.Center">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary">Registar Service Order</MudButton>
+                        </MudStack>
+                        <MudStack Row="true" StretchItems="StretchItems.None" Justify="Justify.Center">
+                            <MudButton Variant="Variant.Filled" Color="Color.Error">Cancel</MudButton>
+                        </MudStack>
+                    </MudStack>
+
+                </MudPaper>
+            </MudStack>
+
+        </MudItem>
+
+  }
+    
+
+
+   
+</MudGrid>

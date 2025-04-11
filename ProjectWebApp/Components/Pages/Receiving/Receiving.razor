@@ -1,0 +1,215 @@
+﻿
+@page "/Receiving/Receiving"
+
+<MudText Typo="Typo.h3">EBikes Receiving</MudText>
+@if (hasError)
+{
+    <MudAlert Elevation="2"
+              Severity="Severity.Error"
+              Dense="true">
+        <MudText Typo="Typo.h6">@errorMessage</MudText>
+        @foreach (var error in errorDetails)
+        {
+            <MudText Typo="Typo.body2">@error</MudText>
+        }
+    </MudAlert>
+}
+@if (hasFeedback)
+{
+    <MudAlert Elevation="2"
+              Severity="Severity.Info"
+              Dense="true">
+        <MudText Typo="Typo.body2">@feedbackMessage</MudText>
+    </MudAlert>
+}
+@if (PurchaseOrder.Count > 0)
+{
+    <MudPaper Elevation="2" Class="pa-4 border-solid border-2 mud-border-primary mb-5">
+        <MudDataGrid Items="PurchaseOrder"
+        FixedFooter="true"
+        FixedHeader="true"
+        Height="20vh">
+            <Columns>
+                <PropertyColumn Property="x => x.PO" title="PO #"></PropertyColumn>
+                <PropertyColumn Property="x => x.Date" title="Date"></PropertyColumn>
+                <PropertyColumn Property="x => x.Vendor" title="Vendor"></PropertyColumn>
+                <PropertyColumn Property="x => x.Contact" title="Contact #"></PropertyColumn>
+                <TemplateColumn>
+                    <CellTemplate>
+                        <MudButton Variant="Variant.Filled"
+                        Color="Color.Secondary"
+                        Class="ml-2"
+                        OnClick="() => LoadOrderDetails(context.Item.PO)"
+                        StartIcon="@Icons.Material.Filled.Search">
+                            View Order
+                        </MudButton>
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager />
+            </PagerContent>
+        </MudDataGrid>
+    </MudPaper>
+}
+
+
+
+@if (showOrderDetails)
+{
+    <MudPaper Elevation="2" Class="pa-4 border-solid border-2 mud-border-primary mb-5">
+        <MudText Typo="Typo.h6" Class="mb-3">
+            <strong>PO #: </strong> @orderDetails[0]?.PO &nbsp;&nbsp;
+            <strong>Vendor: </strong> @orderDetails[0]?.Vendor &nbsp;&nbsp;
+            <strong>Phone: </strong> @orderDetails[0]?.Phone
+        </MudText>
+        <MudTable Items="orderDetails" Dense="true" Hover="true" Class="mt-4">
+            <HeaderContent>
+                <MudTh>Part ID</MudTh>
+                <MudTh>Description</MudTh>
+                <MudTh>Order Qty</MudTh>
+                <MudTh>Outstanding</MudTh>
+                <MudTh>Received</MudTh>
+                <MudTh>Returned</MudTh>
+                <MudTh>Reason</MudTh>
+            </HeaderContent>
+
+            <RowTemplate Context="item">
+                <MudTd>@item.PartID</MudTd>
+                <MudTd>@item.Description</MudTd>
+                <MudTd>@item.OrderQty</MudTd>
+                <MudTd>@item.Outstanding</MudTd>
+                <MudTd>
+                    <MudNumericField @bind-Value="item.Received"
+                                     Min="0"
+                                     Max="@item.Outstanding"
+                                     Class="mr-2"
+                                     Style="width: 80px;" />
+                </MudTd>
+                <MudTd>
+                    <MudNumericField @bind-Value="item.Returned"
+                                     Min="0"
+                                     Max="@item.OrderQty"
+                                     Class="mr-2"
+                                     Style="width: 80px;" />
+                </MudTd>
+                <MudTd>
+                    <MudTextField @bind-Value="item.Reason"
+                                  Variant="Variant.Outlined"
+                                  Style="width: 150px;" />
+                </MudTd>
+            </RowTemplate>
+            
+        </MudTable>
+
+        <MudGrid Class="mt-3" Justify="Justify.FlexStart" Spacing="5">
+            <MudItem>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Secondary"
+                           StartIcon="@Icons.Material.Filled.Add">
+                    Receive
+                </MudButton>
+            </MudItem>
+            <MudItem>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Error"
+                           StartIcon="@Icons.Material.Filled.Close">
+                    Force Close
+                </MudButton>
+            </MudItem>
+            <MudItem xs="3" Class="height: 56px;">
+                <MudTextField @bind-Value="closeReason"
+                              Label="Reason for Closing"
+                              Variant="Variant.Outlined" Class="mr-2">
+
+                </MudTextField>
+            </MudItem>
+            <MudItem>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.RestartAlt">
+                    Reset
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudPaper Elevation="2" Class="pa-4 border-solid border-2 mud-border-primary">
+        <MudText Typo="Typo.h4">Unordered Items to Return</MudText>
+
+        <MudTable Items="UnorderedItems" Dense="true" Class="mt-4">
+            <HeaderContent>
+                <MudTd></MudTd>
+                <MudTd>Description</MudTd>
+                <MudTd>Vendor Part ID</MudTd>
+                <MudTd>Qty</MudTd>
+            </HeaderContent>
+            <RowTemplate Context="item">
+                <MudTd>
+                    <MudButton Color="Color.Error"
+                               OnClick="() => RemoveItem(item.UnorderedItemID)">
+                        <MudIcon Icon="@Icons.Material.Filled.Delete" />
+                    </MudButton>
+                </MudTd>
+                <MudTd>@item.Description</MudTd>
+                <MudTd>@item.VendorPartID</MudTd>
+                <MudTd>
+                    <MudNumericField @bind-Value="item.Qty"
+                                     Min="1" Max="100"
+                                     Class="mr-2"
+                                     Style="width: 80px;" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+        <MudGrid Class="mt-3" Justify="Justify.FlexStart" Spacing="2">
+            <MudItem xs="2">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="Clear"
+                           Class="ml-2"
+                           StartIcon="@Icons.Material.Filled.Delete">
+                    Clear
+                </MudButton>
+            </MudItem>
+            <MudItem xs="3" Class="height: 56px;">
+                <MudTextField @bind-Value="description"
+                              Label="Item Description"
+                              Variant="Variant.Outlined"
+                              Class="mr-2"
+                              Error="@string.IsNullOrWhiteSpace(description)"
+                              ErrorText="This cannot be empty">
+
+                </MudTextField>
+            </MudItem>
+            <MudItem xs="3" Class="height: 56px;">
+                <MudTextField @bind-Value="vendorPartID"
+                              Label="Vendor Part ID"
+                              Variant="Variant.Outlined" Class="mr-2"
+                              Error="@string.IsNullOrWhiteSpace(vendorPartID)"
+                              ErrorText="This cannot be empty">
+
+                </MudTextField>
+            </MudItem>
+            <MudItem xs="2" Class="height: 56px;">
+                <MudNumericField @bind-Value="qty"
+                                 Min="0"
+                                 Max="100"
+                                 Style="width: 100px;"
+                                 Class="mr-2"
+                                 Error="@(qty <= 0)"
+                                 ErrorText="Quantity must be greater than 0." />
+            </MudItem>
+            <MudItem xs="2">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Secondary"
+                           OnClick="AddItemToList"
+                           Class="ml-2"
+                           StartIcon="@Icons.Material.Filled.Add">
+                    Insert
+                </MudButton>
+            </MudItem>
+
+        </MudGrid>
+    </MudPaper>
+
+}
